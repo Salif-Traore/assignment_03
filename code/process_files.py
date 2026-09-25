@@ -20,21 +20,58 @@ Run it:  Run and Debug -> "Streamlit Run: Current File"   (see README Reference 
 Test it: pytest tests/test_streamlit.py -k process_files
 """
 
+import json
+
+import streamlit as st
+
+from packaging_parser import calc_total_units, get_unit, parse_packaging
+
 # --- The page ---------------------------------------------------------------------
-#
-# No scaffolding. You have written two of these now, and this one does the same
-# processing as process_file.py — the difference is that it remembers.
-#
-# What you have to work out for yourself:
-#
-#   - the three parts of the session-state pattern: initialise once, update on the
-#     click, display from state — README Reference #6
-#   - a button, key="process", so that choosing a file and clicking are two
-#     different things
-#   - two st.metric cards, "Files processed" and "Packages processed", side by side
-#     in st.columns(2), on the page from the first run
-#   - one st.info line per file processed so far, kept in a list
-#
-# README Step 7 names the two traps. The tests are built around them: choosing a
-# file without clicking must change nothing, and a rerun with the same file still
-# chosen must not count it again.
+
+st.title("Process Package Files")
+
+# Initialise session state once — the first time the script ever runs.
+if "files_processed" not in st.session_state:
+    st.session_state.files_processed = 0
+    st.session_state.packages_processed = 0
+    st.session_state.history = []
+
+uploaded_file = st.file_uploader(
+    "Upload package file:",
+    key="package_file",
+)
+
+clicked = st.button("Process file", key="process")
+
+# Processing happens only on the rerun the click caused, and only if a file
+# is actually chosen.
+if clicked and uploaded_file:
+    text = uploaded_file.getvalue().decode("utf-8")
+    lines = text.splitlines()
+
+    packages = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        package = parse_packaging(line)
+        packages.append(package)
+
+    output_name = uploaded_file.name.replace(".txt", ".json")
+    output_path = f"data/{output_name}"
+    with open(output_path, "w") as json_file:
+        json.dump(packages, json_file, indent=4)
+
+    summary = f"{len(packages)} packages written to {output_path}"
+
+    st.session_state.files_processed += 1
+    st.session_state.packages_processed += len(packages)
+    st.session_state.history.append(summary)
+
+# Display from state — every run, regardless of whether a click just happened.
+col1, col2 = st.columns(2)
+col1.metric("Files processed", st.session_state.files_processed)
+col2.metric("Packages processed", st.session_state.packages_processed)
+
+for summary in st.session_state.history:
+    st.info(summary)
