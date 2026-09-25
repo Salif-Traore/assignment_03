@@ -1,6 +1,1 @@
-Write your reflection here.
-
-See reflection.md for what makes a good reflection — be specific, use the
-terminology from this assignment (rerun, widget, return value, guard, bytes vs.
-text, decode, session state, initialise once, button-triggered, metric), and make
-it actionable.
+The main idea of this assignment was Steamlist rerun mode every interaction reruns the whole script from top to bottom. A plain variable resets every single time (files_processed = 0 problem) and every widget returns empty on the first run so it needs a guard like (if package_data:, if uploaded_file:) The widgets return as values and each is its own function call, not just a UI element. So it reads the return value and doesn't assume it's set in stone. I think that I struggled the most with the process_files.py because I didn't initially separate a file from when the button was clicked. My first thought process was that because my first version processed the file as soon as it was uploaded that refreshing the page or touching another widget it would silently repossess the same file and that was the reason it was inflating my counts. I fixed this issue by gating the actual parsing/writing logic inside if clicked and uploaded_file: while keeping the metric display code outside that check so the numbers still show for each run now when it happens.
